@@ -23,6 +23,7 @@ The backend ships a dry-run smoke suite that forbids real network sends:
 
 ```bash
 cd server
+pip install -r requirements-dev.txt                          # httpx for TestClient
 python -c "from app.main import create_app; create_app()"   # init schema once
 TELEGRAM_ENABLED=true TELEGRAM_BOT_TOKEN=dummy TELEGRAM_CHAT_ID=1 \
   python scripts/run_all_smokes.py

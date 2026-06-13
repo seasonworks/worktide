@@ -19,7 +19,7 @@ jobs:
           python-version: "3.10"
 
       - name: Install dependencies
-        run: pip install -r server/requirements.txt
+        run: pip install -r server/requirements-dev.txt
 
       - name: Byte-compile sources
         run: python -m compileall -q server client

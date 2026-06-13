@@ -182,6 +182,7 @@ For production, build a signed installer with the scripts in [`client/installer`
 
 ```bash
 cd server
+pip install -r requirements-dev.txt   # adds httpx for the TestClient-based smoke
 python scripts/run_all_smokes.py
 ```
 

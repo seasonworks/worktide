@@ -1,0 +1,5 @@
+# Test / development-only dependencies (not required to run the server).
+-r requirements.txt
+
+# fastapi.testclient (Starlette TestClient) — used by scripts/smoke_auth.py
+httpx>=0.27
