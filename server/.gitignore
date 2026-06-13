@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# 环境与数据
+.env
+data/
+*.db
+*.sqlite3
+
+# 日志
+logs/
+
+# IDE
+.idea/
+.vscode/

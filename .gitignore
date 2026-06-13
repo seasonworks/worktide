@@ -1,0 +1,83 @@
+# 顶层 .gitignore —— 防止误提交虚拟环境/数据/日志/构建产物
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# 虚拟环境
+.venv/
+venv/
+env/
+
+# 环境与数据
+.env
+data/
+*.db
+*.sqlite3
+*.db-wal
+*.db-shm
+
+# 日志
+logs/
+*.log
+
+# PyInstaller 构建产物
+build/
+dist/
+
+# IDE
+.idea/
+.vscode/
+
+# Phase 5.2 · runtime state (heartbeat / lifecycle / lag samples)
+client/state/
+state/
+
+# Phase 5.2 · soak debug outputs
+client/soak_*.out
+server/pilot_server.out
+
+# 历史归档 (snapshots/*)
+**/snapshots/
+
+
+# Phase 5.4 · runtime update artifacts
+client/updates/
+updates/
+
+# Phase 5.4 · server release artifacts (大文件，由发布脚本生成)
+server/data/releases/
+data/releases/
+
+# Node / Vite (admin)
+node_modules/
+.pnpm-store/
+.vite/
+
+# Phase 5.5 · 部署密钥与本地构建产物（预留，本期未引入；提前占位防意外提交）
+deploy/.secrets/
+deploy/secrets.env
+docker-compose.override.yml
+*.pem
+*.key
+!*.pub.pem
+.artifacts/
+
+# Python coverage / type checker cache
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+
+# OS junk
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# 编辑器/工具临时文件
+*.swp
+*.swo
+*~
+*.bak

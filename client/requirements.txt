@@ -1,0 +1,8 @@
+requests>=2.31
+
+# Future screenshot feature (not enabled yet):
+# mss>=9.0
+# Pillow>=10.0
+
+# For building the EXE (build-time only, not needed at runtime):
+pyinstaller>=6.0

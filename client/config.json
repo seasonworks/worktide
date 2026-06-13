@@ -1,0 +1,11 @@
+{
+  "server_url": "http://localhost:9000",
+  "api_path": "/api/v1/activity/report",
+  "report_interval_seconds": 30,
+  "request_timeout_seconds": 10,
+  "employee_name": "",
+  "screenshot": {
+    "enabled": false,
+    "interval_seconds": 300
+  }
+}
