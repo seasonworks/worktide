@@ -11,6 +11,7 @@
 <img alt="Ant Design" src="https://img.shields.io/badge/Ant%20Design-5-0170FE?logo=antdesign&logoColor=white">
 <img alt="SQLite" src="https://img.shields.io/badge/SQLite-WAL-003B57?logo=sqlite&logoColor=white">
 <img alt="License" src="https://img.shields.io/badge/license-AGPL--3.0-blue">
+<img alt="CI" src="https://github.com/seasonworks/worktide/actions/workflows/ci.yml/badge.svg">
 </p>
 
 <p align="center">
