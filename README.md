@@ -191,6 +191,9 @@ The suite contains **18 dry-run smoke scripts** that monkey-patch `urlopen` to f
 **Work hours & attendance / 工时统计** — per-day team totals and a net-hours leaderboard
 ![Work hours](docs/screenshots/work-hours.png)
 
+**Window analytics / 窗口分析** — per-app on-shift vs break vs off-shift time, top apps ranked
+![Window analytics](docs/screenshots/window-analytics.png)
+
 **Device health / 设备健康** — agent heartbeat, version, uptime, restart count and update state
 ![Device health](docs/screenshots/device-health.png)
 
