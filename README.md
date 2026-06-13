@@ -10,7 +10,8 @@
 <img alt="Vite" src="https://img.shields.io/badge/Vite-5-646CFF?logo=vite&logoColor=white">
 <img alt="Ant Design" src="https://img.shields.io/badge/Ant%20Design-5-0170FE?logo=antdesign&logoColor=white">
 <img alt="SQLite" src="https://img.shields.io/badge/SQLite-WAL-003B57?logo=sqlite&logoColor=white">
-<img alt="License" src="https://img.shields.io/badge/license-MIT-green">
+<img alt="License" src="https://img.shields.io/badge/license-AGPL--3.0-blue">
+<img alt="CI" src="https://github.com/seasonworks/worktide/actions/workflows/ci.yml/badge.svg">
 </p>
 
 <p align="center">
@@ -25,7 +26,7 @@
 
 它由三层加一个机器人组成:
 
-- **客户端 Agent**(Windows):只观察,不监视——采集前台窗口、空闲秒数,本地缓冲、断网续传、零丢失。
+- **客户端 Agent**(Windows):只观察,不监视——采集前台窗口、空闲秒数,本地 SQLite WAL 缓冲;已提交事件在普通崩溃/重启/断网后仍可恢复续传。
 - **服务端 Service**(FastAPI):把原始活动解释成工时状态机与考勤事件,跑后台清扫、提醒调度、设置中心、Telegram 机器人。
 - **管理后台 Admin**(React + AntD):设备、员工、工时、窗口分析、实时活动、运行时设置等可视化面板。
 - **Telegram 机器人**:员工在群里自助打卡(上/下班、用餐/抽烟/如厕、回座),系统双语通知、@提醒、群发上下班提醒。
@@ -96,14 +97,14 @@ The system is built to survive networks, restarts, and double-clicks without los
 
 | # | Capability | What makes it interesting |
 |---|---|---|
-| 1 | **Offline-first, zero-loss pipeline** | The agent writes every window event to a local **SQLite WAL** buffer first, then a batched uploader drains it. Server down? The agent backs off (5/30/120/300s) and keeps buffering; on recovery it replays — **no data loss across crashes, reboots, or outages.** |
+| 1 | **Crash-resilient offline buffering** | The agent persists every window event to a local **SQLite WAL** buffer before upload, then a batched uploader drains it. Server down? The agent backs off (5/30/120/300s) and keeps buffering; **committed events survive ordinary application crashes, restarts, and network outages**, and are replayed once connectivity recovers. |
 | 2 | **Idempotent work-state machine** | `clock_in / clock_out / start_break / return_to_work / expire_overdue_break` each return an `ActionResult(changed, work_state, code, message)`. Re-running an action is a safe no-op; concurrent break closing uses a **rowcount-guarded `UPDATE ... WHERE ended_at IS NULL`** so the sweeper and a manual return can't double-close the same session. |
 | 3 | **Process-local suppression patterns** | Three small, lock-guarded dedup layers solve real production UX bugs: suppress idle-exit noise after a manual punch, suppress idle-enter right after an auto-return, and swallow the duplicate no-op a double-tapped button produces. Worst case after a restart is one extra message. |
 | 4 | **Runtime-configurable settings** | A `settings_service` layers DB overrides on top of pydantic `Settings`, with a typed whitelist + cache, so operators change thresholds, break limits, reminder times, and notification toggles **live from the admin UI** — no redeploy. |
 | 5 | **Bilingual notifications with graceful degradation** | Notifications are EN/中文, **mention by immutable `tg://user?id=`** (survives username changes) with HTML `parse_mode`, falling back to `@username` then **auto-degrading to plain text** if a user is unbound or Telegram rejects the markup — notifications are never dropped. |
-| 6 | **Single-poller discipline** | Telegram `getUpdates` is mutually exclusive per token; the architecture enforces exactly one long-poller, with persisted offset for restart-safe resume and no duplicate consumption. |
+| 6 | **Single-process poller discipline** | Telegram `getUpdates` is mutually exclusive per token, so the design runs exactly one poller per process with a persisted offset for restart-safe resume. The current deployment model therefore requires a single application worker when polling is enabled; cross-process leader election is not yet implemented (see [Known Limitations](#known-limitations)). |
 | 7 | **Dry-run smoke suite** | A one-command runner drives **18 smoke scripts**, every one monkey-patching `urlopen` to physically forbid real network sends — the notification + state-machine + auth surface is regression-tested with **0 real Telegram messages**. |
-| 8 | **Hardened client lifecycle** | Single-instance mutex, scheduled-task autostart, watchdog, and an **auto-update pipeline** (whole-package swap with semver + HMAC gating) — all designed around Windows quirks (BOM configs, sharing violations on upgrade, fast user switching). |
+| 8 | **Hardened client lifecycle** | Single-instance mutex, scheduled-task autostart, watchdog, and an **auto-update pipeline** (whole-package swap with semver + SHA-256 integrity / shared-secret HMAC gating) — all designed around Windows quirks (BOM configs, sharing violations on upgrade, fast user switching). |
 | 9 | **App-layer auth, zero new deps** | A single HTTP middleware gates the whole admin/API surface behind an **HMAC-signed token** (stdlib only), with **PBKDF2-hashed** password, per-IP login throttling, and a precise allowlist that keeps agent-ingest endpoints open — so monitoring data isn't world-readable while agents keep reporting untouched. |
 | 10 | **Tuned for the long haul** | SQLite is treated as a real production store under concurrent agents: `busy_timeout` + `journal_size_limit` + a daily `wal_checkpoint(TRUNCATE)` keep write contention and WAL growth in check; production hides `/openapi.json` + `/docs`, and the unauthenticated update endpoints regex-validate the version to close path traversal. |
 | 11 | **Observable & self-healing** | Rotating file logs + journald, a device-health channel (heartbeat / lifecycle / update state), and background daemons (break sweeper, clock-reminder scheduler, retention cleanup) that each isolate failures so one bad task never takes down the API. |
@@ -147,10 +148,12 @@ python -m venv .venv
 # source .venv/bin/activate      # macOS/Linux
 pip install -r requirements.txt
 cp .env.example .env             # then fill in the values (see comments in the file)
-uvicorn app.main:app --host 127.0.0.1 --port 9000
+uvicorn app.main:app --host 127.0.0.1 --port 9000 --workers 1
 ```
 
 The server auto-creates the SQLite schema on first run. Generate the admin password hash and session secret with the helpers in [`server/app/auth.py`](server/app/auth.py).
+
+> ⚠️ **Run a single worker.** The in-process background services (cleanup, break sweeper, clock-reminder scheduler) and the Telegram poller assume one process — see [Known Limitations](#known-limitations).
 
 ### 2. Admin console
 
@@ -161,9 +164,18 @@ npm run dev        # dev server on http://localhost:5173
 npm run build      # production build → dist/
 ```
 
-### 3. Agent (Windows)
+### 3. Agent (Windows only)
 
-Edit the agent config (`server_url`, employee name), then run `python -m app.main` for development, or build a signed installer with the scripts in [`client/installer`](client/installer) / [`client/packaging`](client/packaging).
+```powershell
+cd client
+python -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt
+copy config.example.json config.json   # then set "server_url" and "employee_name"
+python main.py
+```
+
+For production, build a signed installer with the scripts in [`client/installer`](client/installer) / [`client/packaging`](client/packaging).
 
 ---
 
@@ -208,8 +220,29 @@ The Mermaid diagrams above render natively on GitHub as the architectural refere
 - Secrets live only in environment files (see `server/.env.example`) — never in the repo.
 - Deploy strictly on company-owned devices, with employees informed and consenting, in line with local labor and privacy law.
 
+### Current security limitations / 当前安全限制
+
+- Agent ingest endpoints (`/api/v1/activity/report`, `/api/v1/windows/report`, `/api/v1/agent/*`) do **not** yet use per-device credentials, and an unknown `machine_id` reporting activity may self-register as a new employee.
+- Until device enrollment and signed requests are implemented, deploy the ingest API behind trusted network controls — a private tunnel, VPN, or an authenticated reverse-proxy boundary — rather than exposing it directly to the public internet.
+- 上报接口尚无每设备凭证、未知 `machine_id` 可能自动注册;在设备注册与请求签名落地前,应通过可信网络 / VPN / 私有隧道 / 反向代理鉴权来保护上报接口。
+
+---
+
+## Known Limitations
+
+An honest engineering showcase — the boundaries below are intentional trade-offs for the current scale, not defects.
+
+- **Agent ingest is unauthenticated.** No per-device credentials yet; unknown devices may self-register. Per-device `device_id`/`device_secret`, admin-approved enrollment, and HMAC-signed requests (timestamp + nonce + body hash, with replay protection and revocation) are planned. Until then, keep the ingest API behind a trusted network boundary.
+- **Single-worker deployment.** The Telegram poller and the in-process background services (cleanup, break sweeper, clock-reminder scheduler) assume one application worker. Run uvicorn with `--workers 1` when polling is enabled; horizontal scaling needs dedicated worker processes with leader election.
+- **Auto-update uses a shared-secret HMAC** for SHA-256 integrity gating, not asymmetric package signing. A future release should move to Ed25519 signatures with the private key kept only in the release environment and only the public key embedded in agents.
+- **Admin auth is a single shared password**, not multi-user RBAC. The admin console stores its bearer token in `localStorage`; a hardened deployment should move to Secure / HttpOnly / SameSite cookies with server-side session revocation and CSRF protection.
+- **SQLite (WAL)** targets single-node small/medium deployments. PostgreSQL is the intended migration path for larger scale.
+- **Schema management** currently relies on `create_all` plus small idempotent startup migrations. Alembic-based versioned migrations are planned before broader multi-environment deployment.
+
 ---
 
 ## License
 
-[MIT](LICENSE) © 2026 seasonworks
+[AGPL-3.0](LICENSE) © 2026 seasonworks
+
+Worktide is licensed under the **GNU Affero General Public License v3.0**. Network use counts as distribution: if you run a modified version as a network-accessible service, you must make the complete corresponding source available to its users.

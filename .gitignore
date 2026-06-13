@@ -81,3 +81,32 @@ desktop.ini
 *.swo
 *~
 *.bak
+
+# AI / private project context（绝不进公开仓库）
+.claude/
+MEMORY.md
+docs/private/
+HANDOVER_*
+**/HANDOVER_*
+
+# 额外环境变体（始终保留 .env.example）
+.env.*
+!.env.example
+!**/.env.example
+
+# 证书 / 签名材料
+*.pfx
+*.p12
+*.crt
+*.cer
+*.jks
+*.keystore
+
+# 本地生产配置 / 产物
+config.production.*
+*.production.json
+backups/
+releases/
+
+# Agent 运行期配置（仅发布 config.example.json）
+client/config.json

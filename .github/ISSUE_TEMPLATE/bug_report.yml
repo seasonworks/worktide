@@ -1,0 +1,46 @@
+name: Bug report
+description: Report a problem with Worktide
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for filing a bug. **Do not include real data or secrets** —
+        employee data, Telegram tokens, production databases/logs, or server
+        addresses. For security vulnerabilities, see SECURITY.md instead.
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      options:
+        - Agent (Windows client)
+        - Server (FastAPI)
+        - Admin console (React)
+        - Telegram bot
+        - Other / not sure
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A clear description of the bug and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. ...
+        2. ...
+        3. ...
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: OS, Python/Node version, browser, commit hash, etc.
+    validations:
+      required: false
