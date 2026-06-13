@@ -13,6 +13,10 @@
 <img alt="License" src="https://img.shields.io/badge/license-MIT-green">
 </p>
 
+<p align="center">
+  <img src="docs/screenshots/dashboard.png" alt="Worktide admin — live roster" width="880">
+</p>
+
 ---
 
 ## Overview / 简介
@@ -176,10 +180,21 @@ The suite contains **18 dry-run smoke scripts** that monkey-patch `urlopen` to f
 
 ## Screenshots
 
-> 📸 Add UI captures under `docs/screenshots/` and link them here. The admin console includes:
-> **Devices** (health/heartbeat) · **Employees** · **Work hours & attendance** · **Window analytics** · **Live activity** · **Runtime settings**.
+> All captures use demo / placeholder data — no real employee information.
 
-The Mermaid diagrams above render natively on GitHub as the system's visual reference.
+**Live roster / 在线员工** — real-time status, work-state and idle/break at a glance
+![Live roster](docs/screenshots/dashboard.png)
+
+**Employee detail · shift breakdown / 员工详情 · 当前班次统计** — net work, idle, break types, and top apps
+![Employee detail](docs/screenshots/employee-detail.png)
+
+**Work hours & attendance / 工时统计** — per-day team totals and a net-hours leaderboard
+![Work hours](docs/screenshots/work-hours.png)
+
+**Device health / 设备健康** — agent heartbeat, version, uptime, restart count and update state
+![Device health](docs/screenshots/device-health.png)
+
+The Mermaid diagrams above render natively on GitHub as the architectural reference.
 
 ---
 
